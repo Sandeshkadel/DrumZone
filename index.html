@@ -1,0 +1,877 @@
+
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <title>DrumZone: Play With Beats</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Orbitron:400,700|Bungee+Shade|Poppins:300,400,500">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --primary: #8a2be2;
+      --secondary: #ff00ff;
+      --accent: #00ffff;
+      --background: #0f0c29;
+      --card-bg: #1a1539;
+      --text: #ffffff;
+      --shadow: rgba(138, 43, 226, 0.5);
+      --pulse: rgba(138, 43, 226, 0.8);
+      --dark-text: #333;
+      --dark-bg: #f0f0f0;
+      --dark-card: #ffffff;
+      --dark-shadow: rgba(0, 0, 0, 0.2);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      text-align: center;
+      background: linear-gradient(135deg, var(--background), #1a1539, #0b0a1a);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+      transition: background 0.5s ease;
+    }
+
+    body.light-mode {
+      background: linear-gradient(135deg, var(--dark-bg), #e0e0e0, #d0d0d0);
+      color: var(--dark-text);
+    }
+
+    /* Custom cursor */
+    body {
+      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="none" stroke="%238a2be2" stroke-width="2"/><circle cx="16" cy="16" r="6" fill="%23ff00ff"/></svg>') 16 16, auto;
+    }
+
+    /* Landing Page */
+    #landing {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #0f0c29, #1a1539, #0b0a1a);
+      z-index: 1000;
+      transition: opacity 1s, transform 1s;
+    }
+
+    .stars {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .star {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--duration, 5s) infinite var(--delay, 0s);
+    }
+
+    .cloud {
+      position: absolute;
+      width: 100px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50px;
+      filter: blur(15px);
+      animation: float var(--duration, 20s) infinite linear var(--delay, 0s);
+    }
+
+    .cloud::before, .cloud::after {
+      content: '';
+      position: absolute;
+      background: inherit;
+      border-radius: 50%;
+    }
+
+    .cloud::before {
+      width: 50px;
+      height: 50px;
+      top: -25px;
+      left: 15px;
+    }
+
+    .cloud::after {
+      width: 40px;
+      height: 40px;
+      top: -15px;
+      right: 15px;
+    }
+
+    .title-container {
+      text-align: center;
+      margin-bottom: 50px;
+      opacity: 0;
+      transform: translateY(50px);
+      animation: fadeInUp 1.5s forwards 0.5s;
+    }
+
+    h1.title {
+      font-family: 'Bungee Shade', cursive;
+      font-size: 5rem;
+      margin-bottom: 20px;
+      background: linear-gradient(to right, var(--accent), var(--secondary), var(--primary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
+      letter-spacing: 3px;
+    }
+
+    .subtitle {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      letter-spacing: 5px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-top: -10px;
+    }
+
+    .neon-button {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.8rem;
+      padding: 15px 50px;
+      background: transparent;
+      color: var(--accent);
+      border: 3px solid var(--accent);
+      border-radius: 50px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+      transition: all 0.3s;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+      animation: pulse 2s infinite;
+    }
+
+    .neon-button:hover {
+      color: var(--background);
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.8);
+      transform: translateY(-5px);
+    }
+
+    .neon-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.5), transparent);
+      transition: 0.5s;
+      z-index: -1;
+    }
+
+    .neon-button:hover::before {
+      left: 100%;
+    }
+
+    /* Main Content */
+    #main-content {
+      display: none;
+      opacity: 0;
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+    }
+
+    .control-btn {
+      background: var(--card-bg);
+      border: 2px solid var(--accent);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-family: 'Orbitron', sans-serif;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    }
+
+    .control-btn:hover {
+      background: var(--primary);
+      transform: translateY(-3px);
+      box-shadow: 0 0 20px rgba(138, 43, 226, 0.6);
+    }
+
+    .stats-container {
+      background: var(--card-bg);
+      padding: 15px 30px;
+      border-radius: 20px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      font-family: 'Orbitron', sans-serif;
+      border: 2px solid var(--accent);
+    }
+
+    .stats {
+      font-size: 1.2rem;
+      letter-spacing: 1px;
+    }
+
+    .stats span {
+      color: var(--accent);
+      font-weight: bold;
+      font-size: 1.3rem;
+    }
+
+    .drum-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 3.5rem;
+      margin: 20px 0 40px;
+      text-transform: uppercase;
+      letter-spacing: 5px;
+      background: linear-gradient(to right, var(--accent), var(--secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    }
+
+    .set {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 25px;
+      max-width: 900px;
+      margin: 0 auto 50px;
+    }
+
+    .drum {
+      width: 160px;
+      height: 160px;
+      border-radius: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 3rem;
+      font-weight: bold;
+      color: #ffffff;
+      background-size: cover;
+      background-position: center;
+      border: 3px solid var(--primary);
+      box-shadow: 0 5px 15px var(--shadow), 0 0 20px rgba(138, 43, 226, 0.3) inset;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+      text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+    }
+
+    .drum:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 10px 25px var(--shadow), 0 0 30px rgba(138, 43, 226, 0.5) inset;
+    }
+
+    .drum::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent), var(--primary));
+      z-index: -1;
+      border-radius: 25px;
+      opacity: 0.3;
+    }
+
+    .drum.pressed {
+      animation: drumHit 0.3s ease;
+    }
+
+    .w {
+      background-image: url('tom1.png');
+    }
+
+    .a {
+      background-image: url('tom2.png');
+    }
+
+    .s {
+      background-image: url('tom3.png');
+    }
+
+    .d {
+      background-image: url('tom4.png');
+    }
+
+    .j {
+      background-image: url('snare.png');
+    }
+
+    .k {
+      background-image: url('crash.png');
+    }
+
+    .l {
+      background-image: url('kick.png');
+    }
+
+    .emoji-explosion {
+      position: absolute;
+      font-size: 3rem;
+      pointer-events: none;
+      z-index: 10;
+      animation: explode 1s forwards;
+    }
+
+    .spark {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 5;
+      animation: sparkle 0.8s forwards;
+      box-shadow: 0 0 10px var(--accent);
+    }
+
+    /* Crowd Reaction */
+    .crowd-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 150px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.5);
+       backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px); /* Safari support */
+      transform: translateY(100%);
+      transition: transform 0.5s ease;
+      z-index: 50;
+    }
+
+    .crowd-container.active {
+      transform: translateY(0);
+    }
+
+    .crowd {
+      display: flex;
+      gap: 20px;
+    }
+
+    .person {
+      font-size: 3rem;
+      animation: jump 0.5s infinite alternate;
+    }
+
+    .fire-message {
+      position: absolute;
+      top: -80px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.5rem;
+      color: #ff9900;
+      text-shadow: 0 0 10px #ff3300;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 30px;
+      border-radius: 10px;
+      opacity: 0;
+    }
+
+    /* Messages */
+    .message {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: var(--accent);
+      padding: 15px 30px;
+      border-radius: 50px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      z-index: 100;
+      opacity: 0;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+      border: 2px solid var(--accent);
+    }
+
+    /* Footer */
+    footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px); /* Safari support */
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.1rem;
+  z-index: 10;
+}
+
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+
+    footer a:hover {
+      color: var(--secondary);
+      text-shadow: 0 0 10px rgba(255, 0, 255, 0.7);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+      }
+      50% {
+        box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
+      }
+      100% {
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+      }
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 1; }
+    }
+
+    @keyframes float {
+      0% { transform: translateX(-100vw); }
+      100% { transform: translateX(100vw); }
+    }
+
+    @keyframes drumHit {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes explode {
+      0% {
+        transform: translate(0, 0) scale(0.5);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--tx, 0), var(--ty, -100px)) scale(1.5);
+        opacity: 0;
+      }
+    }
+
+    @keyframes sparkle {
+      0% {
+        transform: translate(0, 0);
+        opacity: 1;
+        width: 8px;
+        height: 8px;
+      }
+      100% {
+        transform: translate(var(--sx, 0), var(--sy, -50px));
+        opacity: 0;
+        width: 2px;
+        height: 2px;
+      }
+    }
+
+    @keyframes jump {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-20px); }
+    }
+
+    @keyframes messageIn {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+      }
+      20%, 80% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+      }
+    }
+
+    /* Light Mode */
+    body.light-mode .drum {
+      border-color: var(--primary);
+      box-shadow: 0 5px 15px var(--dark-shadow), 0 0 20px rgba(138, 43, 226, 0.1) inset;
+    }
+
+    body.light-mode .drum:hover {
+      box-shadow: 0 10px 25px var(--dark-shadow), 0 0 30px rgba(138, 43, 226, 0.2) inset;
+    }
+
+    body.light-mode .stats-container,
+    body.light-mode .control-btn {
+      background: var(--dark-card);
+      color: var(--dark-text);
+      box-shadow: 0 5px 15px var(--dark-shadow);
+    }
+
+    body.light-mode .control-btn:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .set {
+        gap: 15px;
+      }
+      .drum {
+        width: 120px;
+        height: 120px;
+        font-size: 2rem;
+      }
+      h1.title {
+        font-size: 3rem;
+      }
+      .drum-title {
+        font-size: 2.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Landing Page -->
+  <div id="landing">
+    <div class="stars" id="stars"></div>
+    <div class="clouds" id="clouds"></div>
+    
+    <div class="title-container">
+      <h1 class="title">DrumZone</h1>
+      <div class="subtitle">Play With Beats</div>
+    </div>
+    
+    <button class="neon-button" id="play-btn">Play Drum</button>
+    
+    <audio id="bg-music" loop>
+      <source src="https://assets.mixkit.co/music/preview/mixkit-game-show-suspense-waiting-667.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  
+  <!-- Main Content -->
+  <div id="main-content">
+    <div class="header">
+      <div class="controls">
+        <button class="control-btn" id="theme-toggle">🌙 Dark Mode</button>
+        <button class="control-btn" id="reset-btn">🔄 Reset Session</button>
+      </div>
+      
+      <div class="stats-container">
+        <div class="stats">Hits: <span id="hit-count">0</span></div>
+      </div>
+    </div>
+    
+    <h2 class="drum-title">Drum Zone</h2>
+    
+    <div class="set">
+      <button class="w drum">W</button>
+      <button class="a drum">A</button>
+      <button class="s drum">S</button>
+      <button class="d drum">D</button>
+      <button class="j drum">J</button>
+      <button class="k drum">K</button>
+      <button class="l drum">L</button>
+    </div>
+    
+    <div class="crowd-container" id="crowd">
+      <div class="crowd">
+        <div class="person">👏</div>
+        <div class="person">👏</div>
+        <div class="person">👏</div>
+        <div class="person">👏</div>
+        <div class="person">👏</div>
+        <div class="person">👏</div>
+        <div class="person">👏</div>
+      </div>
+      <div class="fire-message" id="fire-message">Wow! You're on Fire! 🔥🥁🔥</div>
+    </div>
+  </div>
+  
+  <div id="message" class="message"></div>
+  
+  <footer>
+    Made with ❤️ by Sandesh Kadel – <a href="https://www.sandeshkadel23.com.np">Sandeshkadel</a>
+  </footer>
+  
+  <script>
+    // Landing Page Elements
+    const landing = document.getElementById('landing');
+    const playBtn = document.getElementById('play-btn');
+    const mainContent = document.getElementById('main-content');
+    const bgMusic = document.getElementById('bg-music');
+    const starsContainer = document.getElementById('stars');
+    const cloudsContainer = document.getElementById('clouds');
+    
+    // Create stars for background
+    for (let i = 0; i < 150; i++) {
+      const star = document.createElement('div');
+      star.classList.add('star');
+      star.style.left = `${Math.random() * 100}%`;
+      star.style.top = `${Math.random() * 100}%`;
+      star.style.setProperty('--duration', `${Math.random() * 5 + 3}s`);
+      star.style.setProperty('--delay', `${Math.random() * 5}s`);
+      star.style.animationDelay = `${Math.random() * 5}s`;
+      starsContainer.appendChild(star);
+    }
+    
+    // Create clouds for background
+    for (let i = 0; i < 8; i++) {
+      const cloud = document.createElement('div');
+      cloud.classList.add('cloud');
+      cloud.style.top = `${Math.random() * 100}%`;
+      cloud.style.setProperty('--duration', `${Math.random() * 30 + 20}s`);
+      cloud.style.setProperty('--delay', `${Math.random() * 10}s`);
+      cloudsContainer.appendChild(cloud);
+    }
+    
+    // Start the experience
+    playBtn.addEventListener('click', () => {
+      landing.style.opacity = '0';
+      landing.style.pointerEvents = 'none';
+      
+      setTimeout(() => {
+        landing.style.display = 'none';
+        mainContent.style.display = 'block';
+        
+        setTimeout(() => {
+          mainContent.style.opacity = '1';
+        }, 100);
+        
+        // Play background music
+        bgMusic.volume = 0.3;
+        bgMusic.play();
+      }, 1000);
+    });
+    
+    // Drum Kit Functionality
+    const drums = document.querySelectorAll('.drum');
+    const hitCountEl = document.getElementById('hit-count');
+    const themeToggle = document.getElementById('theme-toggle');
+    const resetBtn = document.getElementById('reset-btn');
+    const messageEl = document.getElementById('message');
+    const crowdContainer = document.getElementById('crowd');
+    const fireMessage = document.getElementById('fire-message');
+    
+    let hitCount = 0;
+    let lastHitTime = 0;
+    let continuousTimer = null;
+    let isContinuous = false;
+    
+    // Drum sounds - using your original filenames
+    const drumSounds = {
+      'w': 'tom-1.mp3',
+      'a': 'tom-2.mp3',
+      's': 'tom-3.mp3',
+      'd': 'tom-4.mp3',
+      'j': 'snare.mp3',
+      'k': 'crash.mp3',
+      'l': 'kick-bass.mp3'
+    };
+    
+    // Emojis for explosion
+    const emojis = ['🎉', '🥁', '✨', '🔥', '🤘', '😎'];
+    
+    // Play drum sound
+    function playSound(key) {
+      const audio = new Audio(drumSounds[key]);
+      audio.volume = 0.7;
+      audio.play();
+    }
+    
+    // Create emoji explosion
+    function createEmojiExplosion(element) {
+      const rect = element.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      
+      for (let i = 0; i < 8; i++) {
+        const emoji = document.createElement('div');
+        emoji.classList.add('emoji-explosion');
+        emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        emoji.style.left = `${x}px`;
+        emoji.style.top = `${y}px`;
+        emoji.style.setProperty('--tx', `${Math.random() * 100 - 50}px`);
+        emoji.style.setProperty('--ty', `${-Math.random() * 100 - 50}px`);
+        
+        document.body.appendChild(emoji);
+        
+        // Create sparks
+        for (let j = 0; j < 5; j++) {
+          const spark = document.createElement('div');
+          spark.classList.add('spark');
+          spark.style.left = `${x}px`;
+          spark.style.top = `${y}px`;
+          spark.style.setProperty('--sx', `${Math.random() * 40 - 20}px`);
+          spark.style.setProperty('--sy', `${-Math.random() * 40 - 20}px`);
+          document.body.appendChild(spark);
+          
+          setTimeout(() => {
+            spark.remove();
+          }, 800);
+        }
+        
+        setTimeout(() => {
+          emoji.remove();
+        }, 1000);
+      }
+    }
+    
+    // Show message
+    function showMessage(text) {
+      messageEl.textContent = text;
+      messageEl.style.animation = 'none';
+      setTimeout(() => {
+        messageEl.style.animation = 'messageIn 3s forwards';
+      }, 10);
+    }
+    
+    // Handle drum hit
+    function handleDrumHit(key, element) {
+      playSound(key);
+      createEmojiExplosion(element);
+      
+      // Add animation class
+      element.classList.add('pressed');
+      setTimeout(() => {
+        element.classList.remove('pressed');
+      }, 300);
+      
+      // Update hit count
+      hitCount++;
+      hitCountEl.textContent = hitCount;
+      
+      // Show motivational message every 10 hits
+      if (hitCount % 10 === 0) {
+        const messages = [
+          "Keep Grooving! 🎶",
+          "Feel the Beat 🥁",
+          "Awesome Rhythm! 👏",
+          "You're a Natural! 🌟",
+          "Drum Master! 🥁👑"
+        ];
+        showMessage(messages[Math.floor(Math.random() * messages.length)]);
+      }
+      
+      // Continuous play detection
+      const now = Date.now();
+      if (now - lastHitTime < 500) { // 500ms between hits
+        if (!isContinuous && !continuousTimer) {
+          continuousTimer = setTimeout(() => {
+            if (isContinuous) {
+              // Trigger crowd reaction
+              crowdContainer.classList.add('active');
+              fireMessage.style.animation = 'messageIn 4s forwards';
+              
+              // Play crowd sound
+              const crowdSound = new Audio('croud.wav');
+              crowdSound.volume = 0.7;
+              crowdSound.play();
+              
+              // Confetti explosion
+              confetti({
+                particleCount: 300,
+                spread: 100,
+                origin: { y: 0.6 }
+              });
+              
+              // Hide after 5 seconds
+              setTimeout(() => {
+                crowdContainer.classList.remove('active');
+                fireMessage.style.animation = '';
+              }, 5000);
+            }
+            continuousTimer = null;
+          }, 5000); // 5 seconds of continuous play
+        }
+        isContinuous = true;
+      } else {
+        isContinuous = false;
+        if (continuousTimer) {
+          clearTimeout(continuousTimer);
+          continuousTimer = null;
+        }
+      }
+      lastHitTime = now;
+    }
+    
+    // Set up drum event listeners
+    drums.forEach(drum => {
+      drum.addEventListener('click', () => {
+        const key = drum.textContent.toLowerCase();
+        handleDrumHit(key, drum);
+      });
+    });
+    
+    // Keyboard events
+    document.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase();
+      if (drumSounds[key]) {
+        const drum = document.querySelector(`.${key}.drum`);
+        if (drum) {
+          handleDrumHit(key, drum);
+        }
+      }
+    });
+    
+    // Theme toggle
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('light-mode');
+      themeToggle.textContent = document.body.classList.contains('light-mode') ? '☀️ Light Mode' : '🌙 Dark Mode';
+    });
+    
+    // Reset session
+    resetBtn.addEventListener('click', () => {
+      hitCount = 0;
+      hitCountEl.textContent = hitCount;
+      showMessage("Session Reset! 🎉");
+      lastHitTime = 0;
+      isContinuous = false;
+      if (continuousTimer) {
+        clearTimeout(continuousTimer);
+        continuousTimer = null;
+      }
+      crowdContainer.classList.remove('active');
+    });
+  </script>
+</body>
+</html>
